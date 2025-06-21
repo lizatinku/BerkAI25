@@ -1,0 +1,54 @@
+.venv
+# --- Python / FastAPI ---
+__pycache__/
+*.py[cod]
+*.sqlite3
+venv/
+.env
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Uvicorn logs (if any)
+*.log
+
+# --- React Native / Expo ---
+# Node modules and build artifacts
+frontend/node_modules/
+frontend/.expo/
+frontend/.expo-shared/
+frontend/dist/
+frontend/build/
+frontend/web-build/
+frontend/.next/
+frontend/coverage/
+
+# OS-specific
+Thumbs.db
+ehthumbs.db
+*.swp
+*.swo
+
+# --- Logs & caches ---
+*.log
+.cache/
+*.pid
+
+# --- JetBrains / IDEs ---
+.idea/
+
+# --- Temporary files ---
+*.tmp
+*.bak
+*.orig
+
+# --- Images / Data for testing ---
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# --- Curl test artifacts ---
+curl_output.json
+response_dump.txt
