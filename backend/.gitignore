@@ -52,3 +52,5 @@ ehthumbs.db
 # --- Curl test artifacts ---
 curl_output.json
 response_dump.txt
+
+.env
