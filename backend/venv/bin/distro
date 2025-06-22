@@ -1,4 +1,4 @@
-#!/Users/kalyan/Desktop/PhishFilter/backend/venv/bin/python3.11
+#!/Users/sukhpreetaulakh/Desktop/BerkAI25/backend/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
