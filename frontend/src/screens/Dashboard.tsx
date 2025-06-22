@@ -41,15 +41,6 @@ export default function Dashboard() {
         </View>
       </TouchableOpacity>
 
-      <View style={styles.card}>
-        <Ionicons name="mail-outline" size={24} color="#8b5cf6" style={styles.cardIcon} />
-        <View style={styles.cardText}>
-          <Text style={styles.cardTitle}>Detect Phishing Email</Text>
-          <Text style={styles.cardSubtitle}>Analyze emails for phishing attempts and threats</Text>
-        </View>
-        <Ionicons name="arrow-forward-circle" size={24} color="#8b5cf6" />
-      </View>
-
       {/* Widget */}
       <View style={styles.widgetBox}>
         <Text style={styles.widgetTitle}>Control Center Widget</Text>

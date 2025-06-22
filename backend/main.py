@@ -4,11 +4,17 @@ import base64
 from dotenv import load_dotenv
 import anthropic
 
-from fastapi import FastAPI, Request, UploadFile, File
+from fastapi import FastAPI, Request, UploadFile, File, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from http import HTTPStatus
+from pydantic import BaseModel
 
-# --- Internal logic import ---
-from detection.rules import detect_scam
+import requests
+
+class Message(BaseModel):
+    role: str
+    content: str
 
 # --- Load environment variables ---
 load_dotenv()
@@ -18,17 +24,21 @@ print("🔑 API Key loaded:", ANTHROPIC_API_KEY[:6] if ANTHROPIC_API_KEY else "�
 # --- FastAPI app setup ---
 app = FastAPI()
 
-# --- CORS middleware (for frontend to talk to backend) ---
+# --- CORS middleware ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict to your app URL
+    allow_origins=["*"],  # Restrict this in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- Route: Analyze plain email text ---
-print("Now analyzing text")
+# --- Placeholder for detect_scam logic ---
+def detect_scam(text):
+    # Replace with real scam detection logic
+    return {"is_scam": True, "type": "phishing", "explanation": "Fake link", "safe_script": "Never click unknown links."}
+
+# --- Analyze plain email text ---
 @app.post("/analyze")
 async def analyze_email(request: Request):
     data = await request.json()
@@ -36,18 +46,13 @@ async def analyze_email(request: Request):
     result = detect_scam(email_text)
     return result
 
-# --- Route: Analyze image of email (Claude Vision) ---
-print("Now looking at image")
+# --- Analyze image of email using Claude Vision ---
 @app.post("/analyze-image")
 async def analyze_image(file: UploadFile = File(...)):
     print(f"📥 Received file: {file.filename}, type: {file.content_type}")
-
-    # Read and encode image to base64
     image_bytes = await file.read()
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
     print(f"🧵 Base64 string length: {len(image_base64)}")
-
-    print("🔑 API Key present:", bool(ANTHROPIC_API_KEY))
 
     try:
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -94,4 +99,82 @@ async def analyze_image(file: UploadFile = File(...)):
             "raw_response": str(e)
         }
 
-print("DONE")
+# --- WebSocket Client Store ---
+clients = set()
+
+# --- Broadcast helper ---
+async def broadcast(msg: dict):
+    disconnected = set()
+    for ws in clients:
+        try:
+            await ws.send_json(msg)
+        except Exception as e:
+            print(f"WebSocket send error: {e}")
+            disconnected.add(ws)
+    clients.difference_update(disconnected)
+
+# --- VAPI Webhook Handler ---
+@app.post("/")
+async def handle_vapi_webhook(request: Request):
+    body = await request.json()
+    message = body.get("message", {})
+    call = message.get("call", {})
+    call_id = call.get("id")
+
+    if not call_id:
+        return JSONResponse(status_code=HTTPStatus.BAD_REQUEST, content={})
+
+    event_type = message.get("type")
+
+    if event_type in ["conversation-update", "speech-update", "status-update"]:
+        artifact = message.get("artifact", {})
+        messages = artifact.get("messages", [])
+        extracted = {
+            msg["role"]: msg["message"]
+            for msg in messages
+            if msg.get("role") != "system"
+        }
+
+        print("📬 Received request:", extracted)
+
+    elif event_type == "end-of-call-report":
+        summary = message.get("analysis", {}).get("summary", "")
+        print(f"✅ Summary for {summary}")
+
+    return JSONResponse(status_code=HTTPStatus.OK, content={})
+
+# --- WebSocket Endpoint ---
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    clients.add(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except Exception:
+        clients.discard(websocket)
+
+@app.post("/api/new-message")
+async def new_message(request: Request):
+    try:
+        payload = await request.json()
+        print("DEBUG: raw payload:", payload)
+
+        # Optional: validate manually for now
+        role = payload.get("role")
+        content = payload.get("content")
+        if not role or not content:
+            return JSONResponse(status_code=400, content={"error": "Missing role or content"})
+
+        # If you want to convert to Pydantic model:
+        message = Message(role=role, content=content)
+        print("Validated message:", message)
+
+        return {"ok": True, "received": message.dict()}
+
+    except Exception as e:
+        print("Error in /api/new-message:", e)
+        return JSONResponse(status_code=400, content={"error": str(e)})
+
+
+print("✅ Backend server is running.")
