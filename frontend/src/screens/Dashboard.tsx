@@ -1,9 +1,12 @@
 // src/screens/Dashboard.tsx
 
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 export default function Dashboard() {
+  const navigation = useNavigation();
+
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
@@ -26,14 +29,17 @@ export default function Dashboard() {
 
       {/* Tools */}
       <Text style={styles.sectionTitle}>Protection Tools</Text>
-      <View style={styles.card}>
-        <Ionicons name="call-outline" size={24} color="#2563eb" style={styles.cardIcon} />
-        <View style={styles.cardText}>
-          <Text style={styles.cardTitle}>Detect Scam Call</Text>
-          <Text style={styles.cardSubtitle}>Real-time call analysis and scam detection</Text>
+      
+      <TouchableOpacity onPress={() => navigation.navigate('ScamCall')}>
+        <View style={styles.card}>
+          <Ionicons name="call-outline" size={24} color="#2563eb" style={styles.cardIcon} />
+          <View style={styles.cardText}>
+            <Text style={styles.cardTitle}>Detect Scam Call</Text>
+            <Text style={styles.cardSubtitle}>Real-time call analysis and scam detection</Text>
+          </View>
+          <Ionicons name="arrow-forward-circle" size={24} color="#2563eb" />
         </View>
-        <Ionicons name="arrow-forward-circle" size={24} color="#2563eb" />
-      </View>
+      </TouchableOpacity>
 
       <View style={styles.card}>
         <Ionicons name="mail-outline" size={24} color="#8b5cf6" style={styles.cardIcon} />
