@@ -55,7 +55,7 @@ Includes a **Learning Hub** to help users stay informed and safe.
 
 ## 🔧 Built With
 
-- [Claude Sonnet 3.7](https://www.anthropic.com/)
+- [Claude Supa 3.7](https://www.anthropic.com/)
 - [Vapi](https://www.vapi.ai/)
 - [React Native](https://reactnative.dev/)
 - [FastAPI](https://fastapi.tiangolo.com/)
