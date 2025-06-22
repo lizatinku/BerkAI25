@@ -1,11 +1,8 @@
 import express from 'express';
-import fetch from 'node-fetch';       // lightweight Fetch polyfill :contentReference[oaicite:4]{index=4}
 import 'dotenv/config';
 
 const app = express();
 app.use(express.json({ limit: '2mb' }));
-
-console.log("Hello")
 
 app.post('/', (req, res) => {
   const { type, call, status } = req.body.message || {};
