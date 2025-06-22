@@ -137,9 +137,9 @@ async def handle_vapi_webhook(request: Request):
 
         print("📬 Received request:", extracted)
         requests.post(
-            "https://38bf-2607-f140-6000-803a-a17f-9071-74cd-177b.ngrok-free.app/api/new-message",
+            "http://38bf-2607-f140-6000-803a-a17f-9071-74cd-177b.ngrok-free.app/api/new-message",
             json=extracted,
-            timeout=15
+            timeout=10
         )
 
         await broadcast(extracted)
@@ -166,15 +166,26 @@ async def websocket_endpoint(websocket: WebSocket):
         clients.discard(websocket)
 
 @app.post("/api/new-message")
-async def new_message(message: Message):
-    print("Received message:", message)
-    # Simple validation, reject if missing role or content
-    if not message.role or not message.content:
-        return JSONResponse(status_code=400, content={"error": "Missing role or content"})
+async def new_message(request: Request):
+    try:
+        payload = await request.json()
+        print("DEBUG: raw payload:", payload)
 
-    # You can add more processing logic here if needed
+        # Optional: validate manually for now
+        role = payload.get("role")
+        content = payload.get("content")
+        if not role or not content:
+            return JSONResponse(status_code=400, content={"error": "Missing role or content"})
 
-    return {"ok": True, "received": message.dict()}
+        # If you want to convert to Pydantic model:
+        message = Message(role=role, content=content)
+        print("Validated message:", message)
+
+        return {"ok": True, "received": message.dict()}
+
+    except Exception as e:
+        print("Error in /api/new-message:", e)
+        return JSONResponse(status_code=400, content={"error": str(e)})
 
 
 print("✅ Backend server is running.")
