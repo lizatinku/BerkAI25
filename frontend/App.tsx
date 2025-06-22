@@ -1,7 +1,12 @@
 import { NavigationContainer } from '@react-navigation/native';
-import { SafeAreaView, StyleSheet, View, Text } from 'react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { SafeAreaView, StyleSheet } from 'react-native';
 import { useFonts } from 'expo-font';
-import Dashboard from './src/screens/Dashboard'; 
+import Dashboard from './src/screens/Dashboard';
+import PhishingScreen from './src/screens/phishing';
+import { Ionicons } from '@expo/vector-icons';
+
+const Tab = createBottomTabNavigator();
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -11,19 +16,29 @@ export default function App() {
   });
 
   if (!fontsLoaded) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: '#fff' }}>Loading fonts...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return null;
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <NavigationContainer>
-        <Dashboard />
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            tabBarStyle: { backgroundColor: '#111' },
+            tabBarActiveTintColor: '#fff',
+            tabBarInactiveTintColor: '#999',
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => {
+              let iconName: any;
+              if (route.name === 'Dashboard') iconName = 'home-outline';
+              if (route.name === 'Phishing') iconName = 'mail-outline';
+              return <Ionicons name={iconName} size={size} color={color} />;
+            },
+          })}
+        >
+          <Tab.Screen name="Dashboard" component={Dashboard} />
+          <Tab.Screen name="Phishing" component={PhishingScreen} />
+        </Tab.Navigator>
       </NavigationContainer>
     </SafeAreaView>
   );
@@ -33,6 +48,5 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#000',
-    paddingTop: 50,
   },
 });

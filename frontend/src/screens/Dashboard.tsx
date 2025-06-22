@@ -1,5 +1,3 @@
-// src/screens/Dashboard.tsx
-
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
