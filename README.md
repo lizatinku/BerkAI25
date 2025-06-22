@@ -21,7 +21,7 @@ Our team experienced this firsthand—one teammate was tricked into sharing thei
 
 ### 📧 Email Phishing Detection
 - Users upload or screenshot suspicious emails.
-- Uses **Claude Sonnet 3.7** with OCR to find phishing signs (urgency, fake senders, etc.).
+- Uses **Claude Opus 4** with OCR to find phishing signs (urgency, fake senders, etc.).
 - Flags risky emails and explains why.
 
 Includes a **Learning Hub** to help users stay informed and safe.
@@ -32,7 +32,7 @@ Includes a **Learning Hub** to help users stay informed and safe.
 
 - **Frontend:** React Native, Tailwind CSS
 - **Backend:** FastAPI (Claude API), Firebase / Supabase
-- **AI Tools:** Claude Sonnet 3.7 (OCR + phishing detection), Vapi (call audio analysis)
+- **AI Tools:** Claude Opus 4 (OCR + phishing detection), Vapi (call audio analysis)
 
 ---
 
@@ -55,7 +55,7 @@ Includes a **Learning Hub** to help users stay informed and safe.
 
 ## 🔧 Built With
 
-- [Claude Supa 3.7](https://www.anthropic.com/)
+- [Claude Opus 4](https://www.anthropic.com/)
 - [Vapi](https://www.vapi.ai/)
 - [React Native](https://reactnative.dev/)
 - [FastAPI](https://fastapi.tiangolo.com/)
