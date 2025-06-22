@@ -1,97 +1,86 @@
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
+
+type ChatMessage = {
+  role: 'user' | 'bot';
+  content: string;
+};
+const mockChatLog: ChatMessage[] = [];
 
 export default function ScamCall() {
   const navigation = useNavigation();
-  const [status, setStatus] = useState<'ready' | 'analyzing' | 'detected'>('ready');
+  const [chatLog, setChatLog] = useState(mockChatLog);
+
+    const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    if (status === 'analyzing') {
-      const timer = setTimeout(() => {
-        setStatus('detected');
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [status]);
+    // Change to your ngrok or backend ws URL!
+    ws.current = new WebSocket("wss://220b-2607-f140-400-36-a5ac-e3ab-5b36-c973.ngrok-free.app/ws");
+
+    ws.current.onopen = () => {
+      console.log("WebSocket connected");
+    };
+
+    ws.current.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        // If your backend sends single messages, push as new
+        setChatLog((prev) => [...prev, data]);
+        // If your backend sends array of messages, you can:
+        // setChatLog(data);
+      } catch (e) {
+        console.log("Invalid message:", event.data);
+      }
+    };
+
+    ws.current.onerror = (err) => {
+      console.log("WebSocket error:", err);
+    };
+
+    ws.current.onclose = () => {
+      console.log("WebSocket closed");
+    };
+
+    return () => {
+      ws.current?.close();
+    };
+  }, []);
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-        <Ionicons name="arrow-back" size={24} color="#6b4c42" />
-      </TouchableOpacity>
+    <KeyboardAvoidingView style={{flex: 1}} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={styles.container}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#6b4c42" />
+        </TouchableOpacity>
+        <Text style={styles.heading}>Live Call Safety Chat</Text>
 
-      <Text style={styles.heading}>Scam Call Detection</Text>
-
-      <View style={styles.box}>
-        {status === 'ready' && (
-          <>
-            <Ionicons name="call-outline" size={48} color="#6b4c42" />
-            <Text style={styles.statusText}>Ready to Analyze</Text>
-            <Text style={styles.descText}>Tap the button below to start real-time analysis</Text>
-            <TouchableOpacity
-              onPress={() => setStatus('analyzing')}
-              style={styles.actionBtn}
-            >
-              <Text style={styles.btnText}>Analyze Call</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {status === 'analyzing' && (
-          <>
-            <ActivityIndicator size="large" color="#6366f1" />
-            <Text style={styles.statusText}>Analyzing Call...</Text>
-            <Text style={styles.descText}>Please wait while we analyze the call patterns</Text>
-            <TouchableOpacity disabled style={[styles.actionBtn, { opacity: 0.5 }]}>
-              <Text style={styles.btnText}>Analyzing...</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {status === 'detected' && (
-          <>
-            <Ionicons name="alert-circle" size={48} color="#dc2626" />
-            <Text style={[styles.statusText, { color: '#6b4c42' }]}>SCAM DETECTED</Text>
-            <Text style={styles.descText}>This call shows signs of a known scam pattern</Text>
-
-            <View style={styles.scamBox}>
-              <Text style={styles.subheading}>Scam Type: IRS Tax Scam</Text>
-              <Text style={[styles.descText, { textAlign: 'left' }]}>The caller is impersonating the IRS and requesting immediate payment. The IRS never calls demanding immediate payment or threatening arrest.</Text>
-              <Text style={[styles.subheading, { marginTop: 10 }]}>Audio Playback:</Text>
-              <View style={styles.audioRow}>
-                <TouchableOpacity style={styles.audioBtn}>
-                  <Ionicons name="volume-high" size={20} />
-                  <Text> Scammer Voice</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.audioBtn}>
-                  <Ionicons name="volume-high" size={20} />
-                  <Text> Calm Explanation</Text>
-                </TouchableOpacity>
+        <View style={styles.box}>
+          <FlatList
+            data={chatLog}
+            keyExtractor={(_, idx) => idx.toString()}
+            style={styles.chatList}
+            contentContainerStyle={{ paddingVertical: 8 }}
+            renderItem={({ item }) => (
+              <View style={[
+                styles.bubble,
+                item.role === 'user' ? styles.userBubble : styles.aiBubble
+              ]}>
+                <Text style={styles.bubbleText}>{item.content}</Text>
               </View>
-            </View>
+            )}
+          />
+        </View>
 
-            <TouchableOpacity style={styles.reportBtn}>
-              <Text style={styles.btnText}>View Detailed Report</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionBtn, { marginTop: 8, backgroundColor: '#f3f4f6' }]}
-              onPress={() => setStatus('ready')}
-            >
-              <Text style={[styles.btnText, { color: '#6b4c42' }]}>Analyze Another Call</Text>
-            </TouchableOpacity>
-          </>
-        )}
+        <View style={styles.tipsBox}>
+          <Text style={styles.tipHeading}>Quick Safety Tips</Text>
+          <Text style={styles.tip}>• Never give personal information to unsolicited callers</Text>
+          <Text style={styles.tip}>• Government agencies don't threaten immediate arrest</Text>
+          <Text style={styles.tip}>• Hang up and call the official number directly</Text>
+        </View>
       </View>
-
-      <View style={styles.tipsBox}>
-        <Text style={styles.tipHeading}>Quick Safety Tips</Text>
-        <Text style={styles.tip}>• Never give personal information to unsolicited callers</Text>
-        <Text style={styles.tip}>• Government agencies don't threaten immediate arrest</Text>
-        <Text style={styles.tip}>• Hang up and call the official number directly</Text>
-      </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -102,44 +91,49 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
     marginBottom: 16,
+    flex: 1,
   },
-  statusText: { fontSize: 16, fontWeight: 'bold', marginTop: 12 },
-  descText: { fontSize: 13, textAlign: 'center', color: '#4b5563', marginVertical: 8 },
-  actionBtn: {
-    backgroundColor: '#a5b4fc',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    marginTop: 10,
+  chatList: {
+    flex: 1,
+    marginBottom: 10,
   },
-  reportBtn: {
-    backgroundColor: '#6366f1',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    marginTop: 14,
-  },
-  btnText: { fontWeight: 'bold', textAlign: 'center', color: 'white' },
-  scamBox: {
-    backgroundColor: '#fee2e2',
+  bubble: {
     padding: 12,
-    borderRadius: 10,
-    marginVertical: 12,
-    width: '100%',
+    borderRadius: 16,
+    marginVertical: 4,
+    maxWidth: '80%',
   },
-  subheading: { fontWeight: 'bold', marginBottom: 4, color: '#6b4c42' },
-  audioRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 8 },
-  audioBtn: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+  aiBubble: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#fee2e2',
+  },
+  userBubble: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#a5b4fc',
+  },
+  bubbleText: {
+    fontSize: 14,
+    color: '#1f2937',
+  },
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    padding: 4,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    color: '#1f2937',
+  },
+  sendBtn: {
+    backgroundColor: '#6366f1',
+    borderRadius: 8,
+    padding: 8,
+    marginLeft: 4,
   },
   tipsBox: {
     backgroundColor: '#e0f2fe',

@@ -4,14 +4,17 @@ import base64
 from dotenv import load_dotenv
 import anthropic
 
-from fastapi import FastAPI, Request, UploadFile, File
+from fastapi import FastAPI, Request, UploadFile, File, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi.responses import JSONResponse
-from grpc import StatusCode as Status
+from http import HTTPStatus
+
+import requests
+
 
 # --- Internal logic import ---
-from detection.rules import detect_scam
+# from detection.rules import detect_scam
 
 # --- Load environment variables ---
 load_dotenv()
@@ -97,6 +100,8 @@ async def analyze_image(file: UploadFile = File(...)):
             "raw_response": str(e)
         }
 
+
+# For vapi
 @app.post("/")
 async def handle_vapi_webhook(request: Request):
     body = await request.json()
@@ -105,23 +110,56 @@ async def handle_vapi_webhook(request: Request):
     call_id = call.get("id")
 
     if not call_id:
-        return JSONResponse(status_code=Status.HTTP_400_BAD_REQUEST, content={})
+        return JSONResponse(status_code=HTTPStatus.BAD_REQUEST, content={})
 
-    event_type = body.get("type")
+    event_type = message.get("type")
 
     if event_type in ["conversation-update", "speech-update", "status-update"]:
         artifact = message.get("artifact", {})
         messages = artifact.get("messages", [])
-        extracted = [
-            {"role": msg.get("role"), "context": msg.get("message")}
+        extracted = {
+            msg["role"]: msg["message"]
             for msg in messages
-        ]
+            if msg.get("role") != "system"
+        }
+
         print("📬 Received request:", extracted)
+        requests.post("https://220b-2607-f140-400-36-a5ac-e3ab-5b36-c973.ngrok-free.app/api/new-message", json=extracted, timeout=5)
 
     elif event_type == "end-of-call-report":
         summary = message.get("summary")
         print(f"✅ Summary for {call_id}:\n{summary}")
 
-    return JSONResponse(status_code=Status, content={})
+    return JSONResponse(status_code=HTTPStatus.OK, content={})
+
+# Websocket route for VAPI
+clients = set()
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    clients.append(websocket)
+    try:
+        while True:
+            await websocket.receive_text()  # keep the connection open
+    except Exception:
+        clients.remove(websocket)
+
+@app.post("/api/new-message")
+async def new_message(request: Request):
+    print("Got a POST!")
+    return {"ok": True}
+
+# async def new_message(msg: dict):
+#     # Broadcast to all connected clients
+#     disconnected = []
+#     for ws in clients:
+#         try:
+#             await ws.send_json(msg)
+#         except Exception:
+#             disconnected.append(ws)
+#     for ws in disconnected:
+#         clients.remove(ws)
+#     return {"status": "sent"}
 
 print("DONE")
