@@ -136,21 +136,10 @@ async def handle_vapi_webhook(request: Request):
         }
 
         print("📬 Received request:", extracted)
-        requests.post(
-            "http://38bf-2607-f140-6000-803a-a17f-9071-74cd-177b.ngrok-free.app/api/new-message",
-            json=extracted,
-            timeout=10
-        )
-
-        await broadcast(extracted)
 
     elif event_type == "end-of-call-report":
-        summary = message.get("summary")
-        print(f"✅ Summary for {call_id}:\n{summary}")
-        await broadcast({
-            "role": "bot",
-            "content": f"📞 End-of-call summary:\n{summary}"
-        })
+        summary = message.get("analysis", {}).get("summary", "")
+        print(f"✅ Summary for {summary}")
 
     return JSONResponse(status_code=HTTPStatus.OK, content={})
 
