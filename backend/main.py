@@ -7,6 +7,9 @@ import anthropic
 from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi.responses import JSONResponse
+from grpc import StatusCode as Status
+
 # --- Internal logic import ---
 from detection.rules import detect_scam
 
@@ -93,5 +96,32 @@ async def analyze_image(file: UploadFile = File(...)):
             "error": "Failed to contact or parse response from Claude.",
             "raw_response": str(e)
         }
+
+@app.post("/")
+async def handle_vapi_webhook(request: Request):
+    body = await request.json()
+    message = body.get("message", {})
+    call = message.get("call", {})
+    call_id = call.get("id")
+
+    if not call_id:
+        return JSONResponse(status_code=Status.HTTP_400_BAD_REQUEST, content={})
+
+    event_type = body.get("type")
+
+    if event_type in ["conversation-update", "speech-update", "status-update"]:
+        artifact = message.get("artifact", {})
+        messages = artifact.get("messages", [])
+        extracted = [
+            {"role": msg.get("role"), "context": msg.get("message")}
+            for msg in messages
+        ]
+        print("📬 Received request:", extracted)
+
+    elif event_type == "end-of-call-report":
+        summary = message.get("summary")
+        print(f"✅ Summary for {call_id}:\n{summary}")
+
+    return JSONResponse(status_code=Status, content={})
 
 print("DONE")
